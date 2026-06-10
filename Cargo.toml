@@ -1,0 +1,22 @@
+[package]
+name = "eolify-py"
+version = "0.1.0"
+edition = "2024"
+authors = ["Mark Swaanenburg"]
+license = "MIT"
+keywords = ["eol", "newline", "line-endings", "crlf", "lf"]
+categories = ["encoding", "text-processing"]
+readme = "README.md"
+repository = "https://github.com/cygnus9/eolify-py"
+homepage = "https://github.com/cygnus9/eolify-py"
+description = """
+High-performance line ending normalization for Python.
+"""
+
+[lib]
+name = "eolify"
+crate-type = ["cdylib"]
+
+[dependencies]
+eolify = "0.4"
+pyo3 = { version = "0.28", features = ["abi3-py39"] }

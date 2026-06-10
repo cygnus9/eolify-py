@@ -1,0 +1,12 @@
+[build-system]
+requires = ["maturin>=1.7,<2"]
+build-backend = "maturin"
+
+[project]
+name = "eolify"
+version = "0.1.0"
+description = "High-performance line ending normalization for Python."
+requires-python = ">=3.9"
+
+[tool.maturin]
+python-source = "python"
