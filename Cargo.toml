@@ -19,4 +19,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 eolify = "0.4"
-pyo3 = { version = "0.28", features = ["abi3-py39"] }
+pyo3 = { version = "0.28", features = ["abi3-py39", "experimental-inspect"] }
