@@ -1,6 +1,6 @@
 [package]
 name = "eolify-py"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 authors = ["Mark Swaanenburg"]
 license = "MIT"
@@ -19,7 +19,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 eolify = "0.4"
-pyo3 = { version = "0.28", features = ["abi3-py39", "experimental-inspect"] }
+pyo3 = { version = "0.28", features = ["abi3-py39"] }
 
 [profile.release]
 codegen-units = 1

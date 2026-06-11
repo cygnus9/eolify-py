@@ -1,0 +1,19 @@
+from os import PathLike
+from typing import Final, final
+
+@final
+class Mode:
+    CRLF: Final[Mode]
+    LF: Final[Mode]
+    def __eq__(self, /, other: Mode | int) -> bool: ...
+    def __int__(self, /) -> int: ...
+    def __ne__(self, /, other: Mode | int) -> bool: ...
+    def __repr__(self, /) -> str: ...
+
+def normalize_file(
+    input: str | PathLike[str],
+    output: str | PathLike[str],
+    mode: Mode,
+    overwrite: bool = False,
+) -> None: ...
+def normalize_text(text: str, mode: Mode) -> str: ...

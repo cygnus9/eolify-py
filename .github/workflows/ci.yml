@@ -32,4 +32,4 @@ jobs:
         run: cargo test
 
       - name: Verify wheel builds
-        run: maturin build --generate-stubs
+        run: maturin build
