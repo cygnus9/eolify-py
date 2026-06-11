@@ -34,7 +34,7 @@ mod eolify_py {
     }
 
     #[pyfunction]
-    #[pyo3(signature = (input: "str | PathLike[str]", output: "str | PathLike[str]", mode: "More", overwrite: "bool" = false))]
+    #[pyo3(signature = (input: "str | PathLike[str]", output: "str | PathLike[str]", mode: "Mode", overwrite: "bool" = false))]
     /// Normalize line endings from a file
     ///
     /// Args:
