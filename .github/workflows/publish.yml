@@ -75,4 +75,4 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: upload
-          repository-url: ${{ inputs.production && 'https://upload.pypi.org/legacy/' || 'https://test.pypi.org/legacy/' }}
+          repository-url: ${{ github.event_name == 'workflow_dispatch' && !inputs.production && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
