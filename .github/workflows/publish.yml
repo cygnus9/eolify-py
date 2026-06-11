@@ -5,7 +5,10 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
-
+    inputs:
+      production:
+        type: boolean
+        default: false
 jobs:
   build-wheels:
     strategy:
@@ -72,4 +75,4 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: upload
-        if: startsWith(github.ref, 'refs/tags/v')
+          repository-url: ${{ inputs.production && 'https://upload.pypi.org/legacy/' || 'https://test.pypi.org/legacy/' }}
