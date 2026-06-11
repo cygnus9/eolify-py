@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "eolify"
-version = "0.1.2"
+version = "0.1.3"
 description = "High-performance line ending normalization for Python."
 requires-python = ">=3.9"
 
