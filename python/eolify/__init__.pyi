@@ -1,5 +1,5 @@
 from os import PathLike
-from typing import Final, final
+from typing import BinaryIO, Final, final
 
 @final
 class Mode:
@@ -16,4 +16,5 @@ def normalize_file(
     mode: Mode,
     overwrite: bool = False,
 ) -> None: ...
+def normalize_stream(input: BinaryIO, output: BinaryIO, mode: Mode) -> None: ...
 def normalize_text(text: str, mode: Mode) -> str: ...

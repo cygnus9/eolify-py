@@ -31,5 +31,11 @@ jobs:
       - name: Run tests
         run: cargo test
 
+      - name: Install Python package
+        run: pip install ".[test]"
+
+      - name: Run Python tests
+        run: python -m pytest
+
       - name: Verify wheel builds
         run: maturin build

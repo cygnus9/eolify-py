@@ -9,5 +9,11 @@ description = "High-performance line ending normalization for Python."
 requires-python = ">=3.9"
 readme = "README.md"
 
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
 [tool.maturin]
 python-source = "python"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

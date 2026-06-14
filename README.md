@@ -61,6 +61,20 @@ eolify.normalize_file(
 )
 ```
 
+### Normalize a stream
+
+```python
+import eolify
+
+with open("input.txt", "rb") as source:
+    with open("output.txt", "wb") as destination:
+        eolify.normalize_stream(
+            source,
+            destination,
+            eolify.Mode.LF,
+        )
+```
+
 ## API
 
 ### `normalize_text(text, mode) -> str`
@@ -86,6 +100,16 @@ Parameters:
 * `output`: Destination file path.
 * `mode`: `Mode.LF` or `Mode.CRLF`.
 * `overwrite`: Whether an existing destination file may be replaced.
+
+### `normalize_stream(input, output, mode) -> None`
+
+Normalize line endings while copying from one binary stream to another.
+
+Parameters:
+
+* `input`: Binary file-like object opened for reading.
+* `output`: Binary file-like object opened for writing.
+* `mode`: `Mode.LF` or `Mode.CRLF`.
 
 ## Modes
 
