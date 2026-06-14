@@ -71,6 +71,59 @@ def test_normalize_stream_flushes_output() -> None:
     assert destination.flush_count == 1
 
 
+def test_normalize_stream_accepts_read_callback() -> None:
+    source = ChunkedReader(b"one\r\ntwo\rthree\n", chunk_size=1)
+    destination = BytesIO()
+    requested_sizes: list[int] = []
+
+    def read(size: int) -> bytes:
+        requested_sizes.append(size)
+        return source.read(size)
+
+    eolify.normalize_stream(read, destination, eolify.Mode.LF)
+
+    assert destination.getvalue() == b"one\ntwo\nthree\n"
+    assert requested_sizes
+    assert all(size > 0 for size in requested_sizes)
+
+
+def test_normalize_stream_accepts_write_callback() -> None:
+    source = BytesIO(b"one\ntwo\rthree\r\n")
+    chunks: list[bytes] = []
+
+    def write(data: bytes) -> int:
+        chunks.append(data)
+        return len(data)
+
+    eolify.normalize_stream(source, write, eolify.Mode.CRLF)
+
+    assert b"".join(chunks) == b"one\r\ntwo\r\nthree\r\n"
+
+
+def test_normalize_stream_accepts_read_and_write_callbacks() -> None:
+    source = ChunkedReader(b"one\r\ntwo\rthree\n", chunk_size=2)
+    chunks: list[bytes] = []
+
+    def read(size: int) -> bytes:
+        return source.read(size)
+
+    def write(data: bytes) -> int:
+        chunks.append(data)
+        return len(data)
+
+    eolify.normalize_stream(read, write, eolify.Mode.LF)
+
+    assert b"".join(chunks) == b"one\ntwo\nthree\n"
+
+
+def test_normalize_stream_rejects_write_callback_that_returns_too_many_bytes() -> None:
+    def write(data: bytes) -> int:
+        return len(data) + 1
+
+    with pytest.raises(OSError, match="wrote more bytes"):
+        eolify.normalize_stream(BytesIO(b"one\r\n"), write, eolify.Mode.LF)
+
+
 def test_normalize_stream_requires_binary_input() -> None:
     source = StringIO("one\r\n")
     destination = BytesIO()

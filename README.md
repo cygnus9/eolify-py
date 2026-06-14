@@ -75,6 +75,27 @@ with open("input.txt", "rb") as source:
         )
 ```
 
+The source can also be a read callback and the destination can be a write callback.
+
+```python
+import eolify
+
+chunks = [b"hello\r\n", b"world\r\n", b""]
+output = bytearray()
+
+def read(size: int) -> bytes:
+    return chunks.pop(0)
+
+def write(data: bytes) -> int:
+    output.extend(data)
+    return len(data)
+
+eolify.normalize_stream(read, write, eolify.Mode.LF)
+
+print(bytes(output))
+# b'hello\nworld\n'
+```
+
 ## API
 
 ### `normalize_text(text, mode) -> str`
@@ -90,25 +111,26 @@ Returns:
 
 * The normalized string.
 
-### `normalize_file(input, output, mode, overwrite=False) -> None`
+### `normalize_file(source, destination, mode, overwrite=False) -> None`
 
 Normalize line endings while copying one file to another.
 
 Parameters:
 
-* `input`: Source file path.
-* `output`: Destination file path.
+* `source`: Source file path.
+* `destination`: Destination file path.
 * `mode`: `Mode.LF` or `Mode.CRLF`.
 * `overwrite`: Whether an existing destination file may be replaced.
 
-### `normalize_stream(input, output, mode) -> None`
+### `normalize_stream(source, destination, mode) -> None`
 
-Normalize line endings while copying from one binary stream to another.
+Normalize line endings while copying from one binary source to another.
 
 Parameters:
 
-* `input`: Binary file-like object opened for reading.
-* `output`: Binary file-like object opened for writing.
+* `source`: Binary file-like object with `read(size) -> bytes`, or a read callback with the same signature.
+* `destination`: Binary file-like object with `write(data) -> int`, or a write callback with the same signature.
+  If a destination object provides `flush()`, it is called after copying.
 * `mode`: `Mode.LF` or `Mode.CRLF`.
 
 ## Modes

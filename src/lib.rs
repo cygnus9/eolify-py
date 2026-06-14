@@ -6,14 +6,14 @@ use pyo3::{
 };
 
 struct PyReader {
-    obj: Py<PyAny>,
+    read: Py<PyAny>,
 }
 
 impl io::Read for PyReader {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         Python::attach(|py| {
             let result = self
-                .obj
+                .read
                 .bind(py)
                 .call1((buf.len(),))
                 .map_err(|e| io::Error::other(e.to_string()))?;
@@ -46,11 +46,20 @@ impl io::Write for PyWriter {
         Python::attach(|py| {
             let data = PyBytes::new(py, buf);
 
-            self.write
+            let written = self
+                .write
                 .bind(py)
                 .call1((data,))
                 .and_then(|r| r.extract::<usize>())
-                .map_err(|e| io::Error::other(e.to_string()))
+                .map_err(|e| io::Error::other(e.to_string()))?;
+
+            if written > buf.len() {
+                return Err(io::Error::other(
+                    "Python stream wrote more bytes than requested",
+                ));
+            }
+
+            Ok(written)
         })
     }
 
@@ -107,27 +116,27 @@ mod eolify_py {
     }
 
     #[pyfunction]
-    #[pyo3(signature = (input, output, mode, overwrite = false))]
+    #[pyo3(signature = (source, destination, mode, overwrite = false))]
     /// Normalize line endings from a file
     ///
     /// Args:
-    ///     input: Path to source file
-    ///     output: Path destination file
+    ///     source: Path to source file
+    ///     destination: Path destination file
     ///     mode: Desired line ending style
     ///     overwrite: Allow existing output files to be overwritten (default = False)
     fn normalize_file(
         py: Python<'_>,
-        input: path::PathBuf,
-        output: path::PathBuf,
+        source: path::PathBuf,
+        destination: path::PathBuf,
         mode: Mode,
         overwrite: bool,
     ) -> PyResult<()> {
         py.detach(|| {
-            let input = fs::File::open(input)?;
+            let input = fs::File::open(source)?;
             let mut output = if overwrite {
-                fs::File::create(output)?
+                fs::File::create(destination)?
             } else {
-                fs::File::create_new(output)?
+                fs::File::create_new(destination)?
             };
 
             let mut input: Box<dyn io::Read> = match mode {
@@ -141,29 +150,43 @@ mod eolify_py {
     }
 
     #[pyfunction]
-    #[pyo3(signature = (input, output, mode))]
+    #[pyo3(signature = (source, destination, mode))]
     fn normalize_stream(
         py: Python<'_>,
-        input: &Bound<PyAny>,
-        output: &Bound<PyAny>,
+        source: Bound<PyAny>,
+        destination: Bound<PyAny>,
         mode: Mode,
     ) -> PyResult<()> {
-        let input = PyReader {
-            obj: input.getattr("read")?.unbind(),
+        let reader = if source.is_callable() {
+            PyReader {
+                read: source.unbind(),
+            }
+        } else {
+            PyReader {
+                read: source.getattr("read")?.unbind(),
+            }
         };
-        let mut output = PyWriter {
-            write: output.getattr("write")?.unbind(),
-            flush: output.getattr_opt("flush")?.map(Bound::unbind),
+
+        let mut writer = if destination.is_callable() {
+            PyWriter {
+                write: destination.unbind(),
+                flush: None,
+            }
+        } else {
+            PyWriter {
+                write: destination.getattr("write")?.unbind(),
+                flush: destination.getattr_opt("flush")?.map(Bound::unbind),
+            }
         };
 
         py.detach(|| {
-            let mut input: Box<dyn io::Read> = match mode {
-                Mode::LF => Box::new(eolify::LF::wrap_reader(input)),
-                Mode::CRLF => Box::new(eolify::CRLF::wrap_reader(input)),
+            let mut reader: Box<dyn io::Read> = match mode {
+                Mode::LF => Box::new(eolify::LF::wrap_reader(reader)),
+                Mode::CRLF => Box::new(eolify::CRLF::wrap_reader(reader)),
             };
 
-            io::copy(&mut input, &mut output)?;
-            output.flush()?;
+            io::copy(&mut reader, &mut writer)?;
+            writer.flush()?;
             Ok(())
         })
     }
