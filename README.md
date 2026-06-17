@@ -105,7 +105,7 @@ Normalize line endings in a string.
 Parameters:
 
 * `text`: Input text.
-* `mode`: `Mode.LF` or `Mode.CRLF`.
+* `mode`: `Mode.LF`, `Mode.CRLF`, `"\n"` or `"\r\n"`.
 
 Returns:
 
@@ -119,7 +119,7 @@ Parameters:
 
 * `source`: Source file path.
 * `destination`: Destination file path.
-* `mode`: `Mode.LF` or `Mode.CRLF`.
+* `mode`: `Mode.LF`, `Mode.CRLF`, `"\n"` or `"\r\n"`.
 * `overwrite`: Whether an existing destination file may be replaced.
 
 ### `normalize_stream(source, destination, mode) -> None`
@@ -131,7 +131,7 @@ Parameters:
 * `source`: Binary file-like object with `read(size) -> bytes`, or a read callback with the same signature.
 * `destination`: Binary file-like object with `write(data) -> int`, or a write callback with the same signature.
   If a destination object provides `flush()`, it is called after copying.
-* `mode`: `Mode.LF` or `Mode.CRLF`.
+* `mode`: `Mode.LF`, `Mode.CRLF`, `"\n"` or `"\r\n"`.
 
 ## Modes
 

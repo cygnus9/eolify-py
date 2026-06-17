@@ -85,7 +85,10 @@ mod eolify_py {
     };
 
     use eolify::{IoExt, Normalize};
-    use pyo3::{Bound, PyAny, PyResult, Python, pyclass, pyfunction, types::PyAnyMethods};
+    use pyo3::{
+        Bound, FromPyObject, PyAny, PyResult, Python, exceptions::PyValueError, pyclass,
+        pyfunction, types::PyAnyMethods,
+    };
 
     use crate::{PyReader, PyWriter};
 
@@ -98,6 +101,27 @@ mod eolify_py {
         CRLF,
     }
 
+    #[derive(FromPyObject)]
+    enum ModeArg {
+        Mode(Mode),
+        Str(String),
+    }
+
+    impl ModeArg {
+        fn into_mode(self) -> PyResult<Mode> {
+            match self {
+                Self::Mode(mode) => Ok(mode),
+                Self::Str(s) => match s.as_str() {
+                    "\n" => Ok(Mode::LF),
+                    "\r\n" => Ok(Mode::CRLF),
+                    _ => Err(PyValueError::new_err(
+                        "mode must be Mode.LF, Mode.CRLF, '\\n', or '\\r\\n'",
+                    )),
+                },
+            }
+        }
+    }
+
     #[pyfunction]
     #[pyo3(signature = (text, mode))]
     /// Normalize line endings in text
@@ -108,10 +132,10 @@ mod eolify_py {
     ///
     /// Returns:
     ///     Normalized text
-    fn normalize_text(text: &str, mode: Mode) -> String {
-        match mode {
-            Mode::LF => eolify::LF::normalize_str(text),
-            Mode::CRLF => eolify::CRLF::normalize_str(text),
+    fn normalize_text(text: &str, mode: ModeArg) -> PyResult<String> {
+        match mode.into_mode()? {
+            Mode::LF => Ok(eolify::LF::normalize_str(text)),
+            Mode::CRLF => Ok(eolify::CRLF::normalize_str(text)),
         }
     }
 
@@ -128,9 +152,11 @@ mod eolify_py {
         py: Python<'_>,
         source: path::PathBuf,
         destination: path::PathBuf,
-        mode: Mode,
+        mode: ModeArg,
         overwrite: bool,
     ) -> PyResult<()> {
+        let mode = mode.into_mode()?;
+
         py.detach(|| {
             let input = fs::File::open(source)?;
             let mut output = if overwrite {
@@ -155,8 +181,10 @@ mod eolify_py {
         py: Python<'_>,
         source: Bound<PyAny>,
         destination: Bound<PyAny>,
-        mode: Mode,
+        mode: ModeArg,
     ) -> PyResult<()> {
+        let mode = mode.into_mode()?;
+
         let reader = if source.is_callable() {
             PyReader {
                 read: source.unbind(),

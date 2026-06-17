@@ -1,12 +1,11 @@
 from io import BytesIO, StringIO
 
-import pytest
-
 import eolify
+import pytest
 
 
 class ChunkedReader:
-    def __init__(self, data: bytes, chunk_size: int) -> None:
+    def __init__(self, data: bytes, chunk_size: int):
         self._data = data
         self._chunk_size = chunk_size
         self._position = 0
@@ -25,16 +24,16 @@ class ChunkedReader:
 
 
 class FlushingWriter(BytesIO):
-    def __init__(self) -> None:
+    def __init__(self):
         super().__init__()
         self.flush_count = 0
 
-    def flush(self) -> None:
+    def flush(self):
         self.flush_count += 1
         super().flush()
 
 
-def test_normalize_stream_to_lf() -> None:
+def test_normalize_stream_to_lf():
     source = BytesIO(b"one\r\ntwo\rthree\n")
     destination = BytesIO()
 
@@ -43,7 +42,16 @@ def test_normalize_stream_to_lf() -> None:
     assert destination.getvalue() == b"one\ntwo\nthree\n"
 
 
-def test_normalize_stream_to_crlf() -> None:
+def test_normalize_stream_to_lf_by_string():
+    source = BytesIO(b"one\r\ntwo\rthree\n")
+    destination = BytesIO()
+
+    eolify.normalize_stream(source, destination, "\n")
+
+    assert destination.getvalue() == b"one\ntwo\nthree\n"
+
+
+def test_normalize_stream_to_crlf():
     source = BytesIO(b"one\ntwo\rthree\r\n")
     destination = BytesIO()
 
@@ -52,7 +60,16 @@ def test_normalize_stream_to_crlf() -> None:
     assert destination.getvalue() == b"one\r\ntwo\r\nthree\r\n"
 
 
-def test_normalize_stream_handles_line_endings_across_read_boundaries() -> None:
+def test_normalize_stream_to_crlf_by_string():
+    source = BytesIO(b"one\ntwo\rthree\r\n")
+    destination = BytesIO()
+
+    eolify.normalize_stream(source, destination, "\r\n")
+
+    assert destination.getvalue() == b"one\r\ntwo\r\nthree\r\n"
+
+
+def test_normalize_stream_handles_line_endings_across_read_boundaries():
     source = ChunkedReader(b"one\r\ntwo\rthree\n", chunk_size=1)
     destination = BytesIO()
 
@@ -61,7 +78,7 @@ def test_normalize_stream_handles_line_endings_across_read_boundaries() -> None:
     assert destination.getvalue() == b"one\ntwo\nthree\n"
 
 
-def test_normalize_stream_flushes_output() -> None:
+def test_normalize_stream_flushes_output():
     source = BytesIO(b"one\r\n")
     destination = FlushingWriter()
 
@@ -71,7 +88,7 @@ def test_normalize_stream_flushes_output() -> None:
     assert destination.flush_count == 1
 
 
-def test_normalize_stream_accepts_read_callback() -> None:
+def test_normalize_stream_accepts_read_callback():
     source = ChunkedReader(b"one\r\ntwo\rthree\n", chunk_size=1)
     destination = BytesIO()
     requested_sizes: list[int] = []
@@ -87,7 +104,7 @@ def test_normalize_stream_accepts_read_callback() -> None:
     assert all(size > 0 for size in requested_sizes)
 
 
-def test_normalize_stream_accepts_write_callback() -> None:
+def test_normalize_stream_accepts_write_callback():
     source = BytesIO(b"one\ntwo\rthree\r\n")
     chunks: list[bytes] = []
 
@@ -100,7 +117,7 @@ def test_normalize_stream_accepts_write_callback() -> None:
     assert b"".join(chunks) == b"one\r\ntwo\r\nthree\r\n"
 
 
-def test_normalize_stream_accepts_read_and_write_callbacks() -> None:
+def test_normalize_stream_accepts_read_and_write_callbacks():
     source = ChunkedReader(b"one\r\ntwo\rthree\n", chunk_size=2)
     chunks: list[bytes] = []
 
@@ -116,7 +133,7 @@ def test_normalize_stream_accepts_read_and_write_callbacks() -> None:
     assert b"".join(chunks) == b"one\ntwo\nthree\n"
 
 
-def test_normalize_stream_rejects_write_callback_that_returns_too_many_bytes() -> None:
+def test_normalize_stream_rejects_write_callback_that_returns_too_many_bytes():
     def write(data: bytes) -> int:
         return len(data) + 1
 
@@ -124,9 +141,17 @@ def test_normalize_stream_rejects_write_callback_that_returns_too_many_bytes() -
         eolify.normalize_stream(BytesIO(b"one\r\n"), write, eolify.Mode.LF)
 
 
-def test_normalize_stream_requires_binary_input() -> None:
+def test_normalize_stream_requires_binary_input():
     source = StringIO("one\r\n")
     destination = BytesIO()
 
     with pytest.raises(OSError):
-        eolify.normalize_stream(source, destination, eolify.Mode.LF)
+        eolify.normalize_stream(source, destination, eolify.Mode.LF)  # pyright: ignore[reportArgumentType]
+
+
+def test_normalize_stream_rejects_invalid_mode_string():
+    source = BytesIO(b"one\r\n")
+    destination = BytesIO()
+
+    with pytest.raises(ValueError):
+        eolify.normalize_stream(source, destination, "\r")  # pyright: ignore[reportArgumentType]
